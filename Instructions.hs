@@ -38,19 +38,19 @@ data Instruction
   | LSR Operand
   | ROL Operand
   | ROR Operand
-  | BCC String
-  | BCS String
-  | BEQ String
-  | BMI String
-  | BNE String
-  | BPL String
-  | BRA String
-  | BVC String
-  | BVS String
-  | BRL String
-  | JMP String -- does not capture all addressing modes
-  | JSL String -- does not capture all addressing modes
-  | JSR String -- does not capture all addressing modes
+  | BCC Operand
+  | BCS Operand
+  | BEQ Operand
+  | BMI Operand
+  | BNE Operand
+  | BPL Operand
+  | BRA Operand
+  | BVC Operand
+  | BVS Operand
+  | BRL Operand
+  | JMP Operand
+  | JSL Operand
+  | JSR Operand
   | RTL
   | RTS
   | BRK Operand
