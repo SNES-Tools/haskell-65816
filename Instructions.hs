@@ -1,6 +1,4 @@
-import Data.Word16
-import Data.Word32
-import Data.Word8
+import Data.Word (Word8, Word16, Word32)
 
 {-
 
@@ -114,10 +112,12 @@ data Instruction
 {-
 These are all the possible operand types. Note that the use of a specific
 operand types
+
+here, ind = indirect
 -}
 data Operand
-  = Imm8 Word8
-  | Imm16 Word16
+  = Imm8 Word8    -- immediate size doesn't change the opcode, but assembler
+  | Imm16 Word16  -- still needs to know size due to variable width registers
   | Abs Word16
   | AbsX Word16
   | AbsY Word16
@@ -126,8 +126,8 @@ data Operand
   | DirY Word8
   | Accumulator -- only used to specify no operand in INC and DEC
   | DirInd Word8
-  | Long Word32
-  | LongX Word32
+  | Long Word32 -- this should really be 24 bits
+  | LongX Word32 -- this should really be 24 bits
   | DirIndLong Word8
   | DirIndY Word8
   | DirXInd Word8
@@ -136,8 +136,32 @@ data Operand
   | AbsXInd Word16
   | DirIndLongY Word8
   | Stack Word8
-  | StackInd Word8
+  | StackIndY Word8
+  | Label16 String -- location defined
+  | Label24 String -- location defined
   deriving (Show)
+
+isValidOperand :: Instruction -> Bool
+isValidOperand (ADC operand) = isCommonOp operand
+  where
+    isCommonOp (DirXInd _) = True
+    isCommonOp (Stack _) = True
+    isCommonOp (Dir _) = True
+    isCommonOp (DirIndLong _) = True
+    isCommonOp (Imm8 _) = True
+    isCommonOp (Imm16 _) = True
+    isCommonOp (Abs _) = True
+    isCommonOp (Long _) = True
+    isCommonOp (DirIndY _) = True
+    isCommonOp (DirInd _) = True
+    isCommonOp (StackIndY _) = True
+    isCommonOp (DirX _) = True
+    isCommonOp (DirIndLongY _) = True
+    isCommonOp (AbsY _) = True
+    isCommonOp (AbsX _) = True
+    isCommonOp (LongX _) = True
+    isCommonOp _ = False
+isValidOperand _ = True
 {-
 Addressing addressing modes:
 
