@@ -1,3 +1,5 @@
+module Instructions where
+
 import Data.Word (Word16, Word32, Word8)
 
 {-
@@ -76,7 +78,7 @@ data Instruction
   | WDM Operand
   | PEA Operand
   | PEI Operand
-  | PER
+  | PER Operand
   | PHA
   | PHX
   | PHY
@@ -149,6 +151,122 @@ data Operand
   | Label24 String -- location defined
   deriving (Show)
 
+-- "common" operands are for the set of  arithmetic/memory instructions
+-- which all accept a lot (15) of operand types
+isCommonOp :: Operand -> Bool
+isCommonOp (DirXInd _) = True
+isCommonOp (Stack _) = True
+isCommonOp (Dir _) = True
+isCommonOp (DirIndLong _) = True
+isCommonOp (Imm8 _) = True
+isCommonOp (Imm16 _) = True
+isCommonOp (Abs _) = True
+isCommonOp (Long _) = True
+isCommonOp (DirIndY _) = True
+isCommonOp (DirInd _) = True
+isCommonOp (StackIndY _) = True
+isCommonOp (DirX _) = True
+isCommonOp (DirIndLongY _) = True
+isCommonOp (AbsY _) = True
+isCommonOp (AbsX _) = True
+isCommonOp (LongX _) = True
+isCommonOp _ = False
+
+-- operand types for CPX and CPY
+isCompareOp :: Operand -> Bool
+isCompareOp (Imm8 _) = True
+isCompareOp (Imm16 _) = True
+isCompareOp (Dir _) = True
+isCompareOp (Abs _) = True
+isCompareOp _ = False
+
+-- operand types for INC, DEC, ASL, LSR, ROL, ROR
+isShiftOp :: Operand -> Bool
+isShiftOp Accumulator = True
+isShiftOp (Dir _) = True
+isShiftOp (Abs _) = True
+isShiftOp (DirX _) = True
+isShiftOp (AbsX _) = True
+isShiftOp _ = False
+
+-- operand types for BIT
+isBitOp :: Operand -> Bool
+isBitOp (Dir _) = True
+isBitOp (Abs _) = True
+isBitOp (DirX _) = True
+isBitOp (AbsX _) = True
+isBitOp (Imm8 _) = True
+isBitOp (Imm16 _) = True
+isBitOp _ = False
+
+-- operand types for TRB and TSB
+isTestOp :: Operand -> Bool
+isTestOp (Dir _) = True
+isTestOp (Abs _) = True
+isTestOp _ = False
+
+-- operand types for BCC, BCS, BEQ, BMI, BNE, BPL, BRA, BVC, BVS
+isBranchOp :: Operand -> Bool
+isBranchOp (Label8 _) = True
+isBranchOp _ = False
+
+-- operand types for JMP
+isJumpOp :: Operand -> Bool
+isJumpOp (Label16 _) = True
+isJumpOp (Label24 _) = True
+isJumpOp (AbsInd _) = True -- but these can be labels!
+isJumpOp (AbsXInd _) = True -- but these can be labels!
+isJumpOp (AbsIndLong _) = True -- but these can be labels!
+isJumpOp _ = False
+
+-- operand types for JSR
+isJsrOp :: Operand -> Bool
+isJsrOp (Label16 _) = True
+isJsrOp (AbsXInd _) = True -- but these can be labels!
+isJsrOp _ = False
+
+-- operand types for LDX
+isLoadXOp :: Operand -> Bool
+isLoadXOp (Imm8 _) = True
+isLoadXOp (Imm16 _) = True
+isLoadXOp (Abs _) = True
+isLoadXOp (AbsY _) = True
+isLoadXOp (Dir _) = True
+isLoadXOp (DirY _) = True
+isLoadXOp _ = False
+
+-- operand types for LDY
+isLoadYOp :: Operand -> Bool
+isLoadYOp (Imm8 _) = True
+isLoadYOp (Imm16 _) = True
+isLoadYOp (Abs _) = True
+isLoadYOp (AbsX _) = True
+isLoadYOp (Dir _) = True
+isLoadYOp (DirX _) = True
+isLoadYOp _ = False
+
+-- operand types for STX
+isStoreXOp :: Operand -> Bool
+isStoreXOp (Abs _) = True
+isStoreXOp (Dir _) = True
+isStoreXOp (DirY _) = True
+isStoreXOp _ = False
+
+-- operand types for STY
+isStoreYOp :: Operand -> Bool
+isStoreYOp (Abs _) = True
+isStoreYOp (Dir _) = True
+isStoreYOp (DirX _) = True
+isStoreYOp _ = False
+
+-- operand types for STZ
+isStoreZOp :: Operand -> Bool
+isStoreZOp (Abs _) = True
+isStoreZOp (AbsX _) = True
+isStoreZOp (Dir _) = True
+isStoreZOp (DirX _) = True
+isStoreZOp _ = False
+
 isValidOperand :: Instruction -> Bool
 isValidOperand (ADC operand) = isCommonOp operand
 isValidOperand (SBC operand) = isCommonOp operand
@@ -198,97 +316,6 @@ isValidOperand (WDM (Imm8 _)) = True -- only valid operand type
 isValidOperand (PEA (Imm16 _)) = True -- only valid operand type
 isValidOperand (PEI (Dir _)) = True -- only valid operand type
 isValidOperand (PER (Label16 _)) = True -- only valid operand type
-  where
-    -- "common" operands are for the set of  arithmetic/memory instructions
-    -- which all accept a lot (15) of operand types
-    isCommonOp (DirXInd _) = True
-    isCommonOp (Stack _) = True
-    isCommonOp (Dir _) = True
-    isCommonOp (DirIndLong _) = True
-    isCommonOp (Imm8 _) = True
-    isCommonOp (Imm16 _) = True
-    isCommonOp (Abs _) = True
-    isCommonOp (Long _) = True
-    isCommonOp (DirIndY _) = True
-    isCommonOp (DirInd _) = True
-    isCommonOp (StackIndY _) = True
-    isCommonOp (DirX _) = True
-    isCommonOp (DirIndLongY _) = True
-    isCommonOp (AbsY _) = True
-    isCommonOp (AbsX _) = True
-    isCommonOp (LongX _) = True
-    isCommonOp _ = False
-    -- operand types for CPX and CPY
-    isCompareOp (Imm8 _) = True
-    isCompareOp (Imm16 _) = True
-    isCompareOp (Dir _) = True
-    isCompareOp (Abs _) = True
-    isCompareOp _ = False
-    -- operand types for INC, DEC, ASL, LSR, ROL, ROR
-    isShiftOp Accumulator = True
-    isShiftOp (Dir _) = True
-    isShiftOp (Abs _) = True
-    isShiftOp (DirX _) = True
-    isShiftOp (AbsX _) = True
-    isShiftOp _ = False
-    -- operand types for BIT
-    isBitOp (Dir _) = True
-    isBitOp (Abs _) = True
-    isBitOp (DirX _) = True
-    isBitOp (AbsX _) = True
-    isBitOp (Imm8 _) = True
-    isBitOp (Imm16 _) = True
-    isBitOp _ = False
-    -- operand types for TRB and TSB
-    isTestOp (Dir _) = True
-    isTestOp (Abs _) = True
-    isTestOp _ = False
-    -- operand types for BCC, BCS, BEQ, BMI, BNE, BPL, BRA, BVC, BVS
-    isBranchOp (Label8 _) = True
-    isBranchOp _ = False
-    -- operand types for JMP
-    isJumpOp (Label16 _) = True
-    isJumpOp (Label24 _) = True
-    isJumpOp (AbsInd _) = True -- but these can be labels!
-    isJumpOp (AbsXInd _) = True -- but these can be labels!
-    isJumpOp (AbsIndLong _) = True -- but these can be labels!
-    isJumpOp _ = False
-    -- operand types for JSR
-    isJsrOp (Label16 _) = True
-    isJsrOp (AbsXInd _) = True -- but these can be labels!
-    isJsrOp _ = False
-    -- operand types for LDX
-    isLoadXOp (Imm8 _) = True
-    isLoadXOp (Imm16 _) = True
-    isLoadXOp (Abs _) = True
-    isLoadXOp (AbsY _) = True
-    isLoadXOp (Dir _) = True
-    isLoadXOp (DirY _) = True
-    isLoadXOp _ = False
-    -- operand types for LDY
-    isLoadYOp (Imm8 _) = True
-    isLoadYOp (Imm16 _) = True
-    isLoadYOp (Abs _) = True
-    isLoadYOp (AbsX _) = True
-    isLoadYOp (Dir _) = True
-    isLoadYOp (DirX _) = True
-    isLoadYOp _ = False
-    -- operand types for STX
-    isStoreXOp (Abs _) = True
-    isStoreXOp (Dir _) = True
-    isStoreXOp (DirY _) = True
-    isStoreXOp _ = False
-    -- operand types for STY
-    isStoreYOp (Abs _) = True
-    isStoreYOp (Dir _) = True
-    isStoreYOp (DirX _) = True
-    isStoreYOp _ = False
-    -- operand types for STZ
-    isStoreZOp (Abs _) = True
-    isStoreZOp (Absx _) = True
-    isStoreZOp (Dir _) = True
-    isStoreZOp (DirX _) = True
-    isStoreZOp _ = False
 isValidOperand _ = False -- everything else is false
 {-
 Addressing addressing modes:
