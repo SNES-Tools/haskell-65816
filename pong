@@ -1,0 +1,62 @@
+-- Sample program for Pong
+
+mode Pong {
+
+  const {
+    START_POS: byte = 100     -- sort of middle starting position
+    MIN_POS:   byte =  20
+    MAX_POS:   byte = 200
+  }
+
+  state {
+    left_pts:  byte
+    right_pts: byte
+    left_pos:  byte
+    right_pos: byte
+    direction: enum { LEFT, RIGHT } -- direction of ball
+        -- enums? could also be simple ints
+  }
+
+  init {
+    left_pts  <- 0
+    right_pts <- 0
+    left_pos  <- START_POS
+    right_pos <- START_POS
+  }
+
+  loop {
+    -- I'm thinking `con1` and `con2` are namespaces, not a value
+    -- `holding` could be implemented as a macro or inlined function
+    if con1.holding(BUTTON_UP) then {
+      if left_pos >= MIN_POS then {   -- compare with immediate
+        left_pos <- left_pos - 1  -- optimize as decrement operation
+      }
+    } else if con1.holding(BUTTON_DOWN) then {
+      if left_pos <= MAX_POS then {
+        left_pos <- left_pos + 1
+      }      
+    }
+
+    {-
+      repeat the routine above except con1 -> con2, left -> right
+    -}
+  }
+}
+
+sprite Ball {
+  graphics {
+    
+  }
+
+  palettes {
+    
+  }
+
+  frames {
+
+  }
+
+  init {
+
+  }
+}
