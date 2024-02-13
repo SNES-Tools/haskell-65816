@@ -2,29 +2,38 @@
 
 mode Pong {
 
-  const {
+  graphics {
+    font, basic
+  }
+
+  palettes {
+    white
+  }
+
+  constants {
     START_POS: byte = 100     -- sort of middle starting position
     MIN_POS:   byte =  20
     MAX_POS:   byte = 200
   }
 
   state {
-    left_pts:  byte
-    right_pts: byte
-    left_bar:  sprite Ball
-    right_bar: sprite Ball
+    left_pts:     byte
+    right_pts:    byte
+    left_paddle:  sprite Paddle
+    right_paddle: sprite Paddle
+    ball:         sprite Ball
   }
 
   init {
-    left_pts  <- 0
-    right_pts <- 0
+    left_pts     <- 0
+    right_pts    <- 0
+    left_paddle  <- Paddle(LEFT)  -- really? looks ugly
+    right_paddle <- Paddle(RIGHT)
   }
 
   main {
     --     
     if con1.holding(BUTTON_UP) then {
-    -- I'm thinking `con1` and `con2` are namespaces, not a value (method call)
-    -- `holding` could be implemented as a macro or inlined function
       if left_pos >= MIN_POS then {   -- compare with immediate
         left_pos <- left_pos - 1  -- optimize as decrement operation
       }
@@ -38,33 +47,173 @@ mode Pong {
     -}
   }
 
-  sprite {
-    graphics {
-      ball
+  routines {
+    left_wins() {
+      left_pts <- left_pts + 1
+      left_paddle.reset() -- method call syntax?
+      right_paddle.reset()
+      ball.reset(RIGHT)
     }
 
-    palettes {
-      white
-    }
-
-    state {
-      direction: enum { LEFT, RIGHT } -- direction of ball
-          -- enums? could also be simple ints
-    }
-
-    frames {
-
-    }
-
-    init {
-      direction <- if random(2) = 0 then LEFT else RIGHT
-    }
-
-    loop {
-      if direction = left 
+    right_wins() {
+      right_pts <- right_pts + 1
+      left_paddle.reset()
+      right_paddle.reset()
+      ball.reset(LEFT)
     }
   }
 
+  sprites {
+    Paddle {
+      graphics {
+        PaddleGraphics  -- where/how is this defined?
+      }
 
+      palettes {
+        WhitePalette  -- where/how is this defined?
+      }
+
+      animations {
+        PaddleAnimation {
+          {- omitted (read: haven't thought about) how to specify building
+             full sprite animation frame out of smaller graphics
+
+             ideally, you would write how the animation frame would be
+             constructed from the supplied graphics, and we would figure out how
+             to get that on the screen for you
+          -}
+        }
+      }
+
+      state {
+        {-
+          I think sprites should have some implicit state (reflecting what is
+          always included in OAM:
+           * x
+           * y
+           * palette
+           * ...?
+        -}
+        con: controller  -- this is complicated---need to explain my thoughts
+      }
+
+      constants {
+        START_POS: byte = 100     -- sort of middle starting position
+        MIN_POS:   byte =  20
+        MAX_POS:   byte = 200
+
+        LEFT_POS:  byte =  10
+        RIGHT_POS: byte = 245
+      }
+
+      init(player: enum { LEFT, RIGHT }) {
+        -- initialize paddle position, depending on player, and also controller
+        case player of {
+          LEFT -> {
+            con <- controller1 -- see above remark about how this is complex
+            x <- LEFT_POS
+          }
+          RIGHT -> {
+            con <- controller2
+            x <- RIGHT_POS
+          }
+        }
+
+        -- y position independent of player
+        y <- START_POS
+      }
+
+      loop {
+        {-
+          Player can use up/down on controller to move paddle up and down,
+          within bounds
+
+          I'm thinking con are namespaces, not a value (method call)
+          `holding` could be implemented as a macro or inlined function...
+          but we are using it like a value!
+        -}
+        if con.holding(BUTTON_UP) and x >= MIN_POS then {
+          x <- x - 1
+        }
+        if con.holding(BUTTON_DOWN) and x <= MAX_POS then {
+          x <- x + 1  -- I have a thought here about multiple assignments to `x`
+        }
+      }
+
+      methods {
+        reset(): void {
+          y <- START_POS
+        }
+      }
+    }
+
+    Ball {
+      graphics {
+        BallGraphics
+      }
+
+      palettes {
+        WhitePalette
+      }
+
+      animations {
+        BallAnimation {
+          {- omitted (read: haven't thought about) how to specify building
+             full sprite animation frame out of smaller graphics
+
+             ideally, you would write how the animation frame would be
+             constructed from the supplied graphics, and we would figure out how
+             to get that on the screen for you
+          -}
+        }
+      }
+
+      state {
+        horiz:  enum { LEFT, RIGHT } -- direction of ball
+        vert:   enum { UP, DOWN }    -- enums? (could just be ints)
+      }
+
+      constants {
+        LEFT_X:  byte = 5     -- \ defines bounds to declare winner left/right
+        RIGHT_X: byte = 250   -- /
+        MID_X:   byte = (LEFT_X + RIGHT_X) / 2 -- this should be static compute
+        
+        MIN_Y:   byte = 20    -- \ defines top/bottom for bouncing
+        MAX_Y:   byte = 200   -- /
+        MID_Y:   byte = (MIN_Y + MAX_Y) / 2
+      }
+
+      init(player) {
+        direction <- if random(2) = 0 then LEFT else RIGHT
+      }
+
+      loop {
+        case horiz of {
+          LEFT -> {
+            if x < LEFT_X then { -- right wins
+              call right_wins() -- this is really dangerous, and needs to be discussed
+            } else {
+              x <- x - 1
+            }
+          }
+          RIGHT -> {
+            if x > RIGHT_X then { -- left wins
+              call left_wins()
+            } else {
+              x <- x + 1
+            }
+          }
+        } 
+      }
+
+      methods {
+        reset(direction) {
+          y <- MID_Y
+          x <- MID_X
+          horiz <- direction
+        }
+      }
+    }
+  }
 }
 
