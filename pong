@@ -22,6 +22,7 @@ mode Pong {
     left_paddle:  sprite Paddle
     right_paddle: sprite Paddle
     ball:         sprite Ball
+    -- the mode should have some implicit state about the backgrounds used
   }
 
   init {
@@ -29,37 +30,51 @@ mode Pong {
     right_pts    <- 0
     left_paddle  <- Paddle(LEFT)  -- really? looks ugly
     right_paddle <- Paddle(RIGHT)
+
+    -- background stuff. syntax here very not thought out at all!
+    -- this sets up a dividing line in the middle of the screen
+    for i = 0 to 27 do {
+      bg0[15,i] <- basic[line]
+    }
   }
 
   main {
-    --     
-    if con1.holding(BUTTON_UP) then {
-      if left_pos >= MIN_POS then {   -- compare with immediate
-        left_pos <- left_pos - 1  -- optimize as decrement operation
-      }
-    } else if con1.holding(BUTTON_DOWN) then {
-      if left_pos <= MAX_POS then {
-        left_pos <- left_pos + 1
-      }      
-    }
-    {-
-      repeat the routine above except con1 -> con2, left -> right
-    -}
+    -- there's actually nothing that happens here?
   }
 
   routines {
     left_wins() {
       left_pts <- left_pts + 1
+      display_score()
+
       left_paddle.reset() -- method call syntax?
       right_paddle.reset()
+
       ball.reset(RIGHT)
     }
 
     right_wins() {
       right_pts <- right_pts + 1
+      display_score()
+
       left_paddle.reset()
       right_paddle.reset()
+
       ball.reset(LEFT)
+    }
+
+    display_score() {
+      var (left_tens, left_ones): (byte, byte) = hex2dec(left_pts)
+      var (right_tens, right_ones): (byte, byte) = hex2dec(right_pts)
+      -- var is a local variable (should be constant binding in this case)
+      -- hex2dec some utility function we probably provide in a standard library
+      -- this implies the existence of some tuple type. maybe we don't have that
+
+      bg0[12,1] <- font[left_tens]  -- again, syntax to reference graphics??
+      bg0[13,1] <- font[left_ones]
+
+      bg0[17,1] <- font[right_tens]
+      bg0[18,1] <- font[right_ones]
     }
   }
 
@@ -185,6 +200,7 @@ mode Pong {
 
       init(player) {
         direction <- if random(2) = 0 then LEFT else RIGHT
+        -- random is an externally defined function?
       }
 
       loop {
@@ -211,6 +227,29 @@ mode Pong {
           y <- MID_Y
           x <- MID_X
           horiz <- direction
+        }
+      }
+
+      interactions {
+        {-
+          WHO IS IN CHARGE OF DOING SPRITE INTERACTIONS!?!??!
+
+          In general, I don't like the idea that a sprite can have its state
+          changed because of a method call from another sprite. It should only
+          be
+            (1) the method called from the main game loop in the mode, or
+            (2) method automatically called from an interaction
+          Perhaps this doesn't matter because of my other crazy ideas about
+          how to functionalize the main game loop.
+        -}
+        
+        Paddle(x) { -- x is the paddle in question
+          -- just flip the direction it's going
+          if direction = LEFT then {
+            direction <- RIGHT
+          } else {
+            direction <- LEFT
+          }
         }
       }
     }
