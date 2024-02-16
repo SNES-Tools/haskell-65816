@@ -14,7 +14,7 @@ type TypedIdentifier = (Identifier, Type)
         | INT           -- casted to width based on how it is used
         | if PRED then EXPR -- value if false?
         | if PRED then EXPR else EXPR   -- susceptible to dangling else!
-        | ID <- EXPR    -- assignment
+        | ID <- EXPR    -- assignment (both global state and local vars)
         | var ID: TYPE = EXPR   -- mutable local variable, lexically scoped in block?
         | ID(EXPR*)     -- comma separated, function calls
   I don't think it makes sense for functions to be first class...
@@ -65,9 +65,9 @@ data Predicate
 
 {-
   The init, loop (see below), and each function gets an expression to be
-  evaluated. As it stands right now, I don't think there's a limitation
-  syntactically on what kinds of expressions are allowed in these three usages,
-  that is, they allow the full usage of expressions I've declared.
+  evaluated. As it stands right now, I don't think there's a difference
+  syntactically on what kinds of expressions are allowed in these three
+  usages.
 
   However, we will have to think about rules on scoping, especially global state.
 -}
@@ -151,3 +151,7 @@ data Sprite =
     , spriteMethods :: [(Identifier, [TypedIdentifier], Type, Expression)]
       -- function name, parameters, return type, body
     }
+{- Who is allowed to call a sprite method? I'm thinking mode only, but there
+can be a lot of dependencies between functions in the mode/having other sprites
+as state.
+-}
