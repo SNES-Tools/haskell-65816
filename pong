@@ -1,3 +1,11 @@
+{-
+  Something we've discussed: the language will not support automatic handling
+  of collisions between sprites, at least not now.
+
+  init :: () -> State
+  loop :: State -> State
+-}
+
 -- Sample program for Pong
 
 mode Pong {
