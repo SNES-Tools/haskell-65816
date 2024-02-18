@@ -1,3 +1,15 @@
+# A name for the language
+
+Ben Titzer from CMU created a systems language called
+[Virgil](https://github.com/titzer/virgil). I was first introduced to this
+language last summer actually at the Marquette University REU, as that was one
+of the projects going on during that time. As a (former) classical Latin
+scholar the name stuck out to me (in particular, the fact that the name is
+[misspelled](https://en.wikipedia.org/wiki/Virgil#Spelling_of_name)). In that
+spirit I propose the language be called *Horace* (I was even thinking to be
+more of an asshole to call it *Horice* to get back at somebody I have no beef
+with at all).
+
 ### Regarding sprite types
 
 I think these are okay. Really, they're just structs, and it's fine to have a
@@ -80,11 +92,11 @@ static area and thus efficiency gains!
 
 ### Iteration and recursion
 
-One area I'm concerned about is performance. I can't really gauge just yet
-whether or not it will be easy to make a good number of comptuations run within
-the required time for each frame, without significant effort towards
-optimization. I'm learning towards me underestimating the speed of the SNES
-CPU, but it is slow.
+One area I'm concerned about is performance (that's kinda the entire thing). I
+can't really gauge just yet whether or not it will be easy to make a good
+number of comptuations run within the required time for each frame, without
+significant effort towards optimization. I'm learning towards me
+underestimating the speed of the SNES CPU, but it is slow.
 
 One thing that makes it really slow are loops. Super Mario World famously has a
 hexadecimal to decimal converter that is an iterative routine, and has the
