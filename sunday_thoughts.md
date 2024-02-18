@@ -89,28 +89,3 @@ variables stored on the stack in SNES games. There are a few reasons:
 The assumptions we are making in the language (static allocation of state--and
 we hope most of the program variables live here) should allow for good use of
 static area and thus efficiency gains!
-
-### Iteration and recursion
-
-One area I'm concerned about is performance (that's kinda the entire thing). I
-can't really gauge just yet whether or not it will be easy to make a good
-number of comptuations run within the required time for each frame, without
-significant effort towards optimization. I'm learning towards me
-underestimating the speed of the SNES CPU, but it is slow.
-
-One thing that makes it really slow are loops. Super Mario World famously has a
-hexadecimal to decimal converter that is an iterative routine, and has the
-potential to take up so much computation time that it lags the game.
-
-Iteration like
-```
-for i = 1 to 5 do
-  ...
-```
-can be unrolled, but if the upper bound is variable, there's a concern that
-this allows code that runs too slow. We ought to either (1) figure it out, and
-(2) let the programmer know.
-
-Recursion could also easily blow up the stack and it's not clear to me that
-recursive solutions would be ideal for the problems one would need to solve
-while coding a game.
