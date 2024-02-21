@@ -1,41 +1,64 @@
 module AST where
 
-type Identifier = String  -- placeholder, there will be some rules for identifiers
+type Identifier = String -- placeholder, there will be some rules for identifiers
 
 type TypedIdentifier = (Identifier, Type)
+
 {- anytime a variable/constant is introduced, you would have to write its type:
   something like
     x: byte
 -}
-
 {-
   I'm thinking of an expression oriented language:
   EXPR := { EXPR* }     -- EXPRs separatd by newlines
+        | ()            -- void value!
         | INT           -- casted to width based on how it is used
         | if PRED then EXPR -- value if false?
         | if PRED then EXPR else EXPR   -- susceptible to dangling else!
         | ID <- EXPR    -- assignment (both global state and local vars)
         | var ID: TYPE = EXPR   -- mutable local variable, lexically scoped in block?
         | ID(EXPR*)     -- comma separated, function calls
+        | for ID = EXPR to EXPR do EXPR
+        | case EXPR of CASES
+  CASES := ...
   I don't think it makes sense for functions to be first class...
   * the extra level of indirection could slow things down (but also that's our
     problem to deal with, so maybe it's okay)
   * we will probably want to inline as much as possible
+  * update: it might make sense to allow same function pointers as C sometimes
   Missing things:
-  * Loops
-  * Binary operations
   * Every n frames
-  * case expressions (for matching to enums/ints)
-  * (EXPR) for setting precedence order
+  * (EXPR) for setting precedence order (will the parser do this before AST?)
 -}
 data Expression
-  = Block [Expression]
+  = Block [Expression]  -- chains multiple expressions together
+  | Void -- i think we will have many voids showing up
   | Literal Int
   | If Predicate Expression
   | IfElse Predicate Expression Expression
   | Assignment Identifier Expression
   | Variable TypedIdentifier Expression -- all variables must be initialized
   | FunctionCall Identifier [Expression]
+  | Iterator Identifier Expression Expression Expression
+    -- first two expressions are lower/upper bound (I'm presuming integers only)
+    -- third is body of loop
+  | Operation IntOperator Expression Expression
+    -- also thinking only operation between integral expressions
+    -- does not define a proper precedence order
+  | Case Expression [(Expression, Expression)] Expression
+    -- the pair is value to check against (should be either int or enum literal)
+    -- and the value if that case is matched
+
+data IntOperator
+  = Plus
+  | Minus
+  | Times -- this is dangerous to give to the programmer freely
+  | Divide -- even more dangerous
+  | LeftShift -- shifts of many amounts will be difficult to do (65816 to blame)
+  | RightShift  -- arithmetic
+  | BitwiseAnd
+  | BitwiseOr
+  | BitwiseEor
 
 {-
   I'm thinking integer only comparisons here (signed/unsigned?)
@@ -55,10 +78,24 @@ data CompareOperator
 
   Since if is an expression, this means something like
     x <- if y = 2 then 1 else 0
-  is not too unusual...
+  is not too unusual... (as I think of it, this is how boolean _values_ would
+  have been done under the hood)
+
+  PRED := (PRED)
+        | not PRED
+        | PRED and PRED
+        | PRED or PRED
+        | EXPR COMP EXPR
+  COMP := '='
+        | '/='
+        | '<'
+        | '<='
+        | '>'
+        | '>='
 -}
 data Predicate
   = Boolean Bool
+  | Not Predicate
   | And Predicate Predicate
   | Or Predicate Predicate
   | Comparison CompareOperator Expression Expression
@@ -71,23 +108,21 @@ data Predicate
 
   However, we will have to think about rules on scoping, especially global state.
 -}
-
 {-
   This mode definition is pretty analogous to the structure of the sample
   pong code
 -}
-data Mode =
-  Mode
-    { modeGraphics :: [Graphics]
-    , modePalettes :: [Palette]
-    , modeConstants :: [(TypedIdentifier, Expression)]
+data Mode = Mode
+  { modeGraphics :: [Graphics]
+  , modePalettes :: [Palette]
+  , modeConstants :: [(TypedIdentifier, Expression)]
       -- the value of an expression must be statically computable
-    , modeState :: [(Identifier, Type)]
-    , modeInit :: Expression  -- inits that have params?
-    , modeLoop :: Expression
-    , modeFunctions :: [(Identifier, [TypedIdentifier], Type, Expression)]
+  , modeState :: [(Identifier, Type)]
+  , modeInit :: Expression -- inits that have params?
+  , modeLoop :: Expression
+  , modeFunctions :: [(Identifier, [TypedIdentifier], Type, Expression)]
       -- function name, parameters, return type, body
-    }
+  }
 
 type Graphics = () -- placeholder
 
@@ -121,7 +156,6 @@ type AnimationFrame = () -- placeholder
   confusing explanation on paper; I think I have a more concrete idea in my
   mind.)
 -}
-
 {-
   I haven't fully decided on the types yet. I think we should avoid pointer
   things (we'll be presumably moving memory around and pointers are annoying
@@ -131,26 +165,27 @@ type AnimationFrame = () -- placeholder
   Having variables of sprite types also made us think about dynamic memory
   allocation. I don't think I really want there to be dynamic memory allocation
   in the language. Perhaps there are ways to alleviate this.
+  THE SUNDAY THOUGHTS HANDLE THIS SOMEWHAT!
 -}
 data Type
   = ByteType
   | WordType
   | SpriteType Identifier
   | EnumType [Identifier]
+  | VoidType  -- void type
 
-data Sprite =
-  Sprite
-    { spriteGraphics :: [Graphics]
-    , spritePalettes :: [Palette]
-    , spriteAnimationFrames :: [AnimationFrame]
-    , spriteConstants :: [(TypedIdentifier, Expression)]
+data Sprite = Sprite
+  { spriteGraphics :: [Graphics]
+  , spritePalettes :: [Palette]
+  , spriteAnimationFrames :: [AnimationFrame]
+  , spriteConstants :: [(TypedIdentifier, Expression)]
       -- the value of an expression must be statically computable
-    , spriteState :: [(Identifier, Type)]
-    , spriteInit :: Expression  -- inits that have params?
-    , spriteLoop :: Expression
-    , spriteMethods :: [(Identifier, [TypedIdentifier], Type, Expression)]
+  , spriteState :: [(Identifier, Type)]
+  , spriteInit :: Expression -- inits that have params?
+  , spriteLoop :: Expression
+  , spriteMethods :: [(Identifier, [TypedIdentifier], Type, Expression)]
       -- function name, parameters, return type, body
-    }
+  }
 {- Who is allowed to call a sprite method? I'm thinking mode only, but there
 can be a lot of dependencies between functions in the mode/having other sprites
 as state.
