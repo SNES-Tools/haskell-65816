@@ -1,0 +1,31 @@
+{-
+  A second attempt at generating sample code for Pong, reflecting discussions
+  about the language features.
+-}
+
+mode Pong {
+
+  graphics { } -- omitted
+  palettes { } -- omitted
+
+  enums {
+    Side { LEFT, RIGHT }
+  }
+  
+  state {
+    left_pts     : number (0-99) -- default value inferred to be 0 
+    right_pts    : number (0-99)
+    left_paddle  : sprite Paddle -- default value is a call to init
+    right_paddle : sprite Paddle -- except not, there is a parameter!
+    ball         : sprite Ball
+  }
+
+  init {
+    left_paddle  <- Paddle(LEFT)
+    right_paddle <- Paddle(RIGHT)
+
+    for i = 0 to 27 do { -- type inference on `i` is number (0-27) ?
+      bg0[15, i] <- **   -- omitted
+    }
+  }
+}
