@@ -19,7 +19,7 @@ value. One can declare an integer width from 0 to 32 bits either as signed or
 unsigned:
 
 ```
-var x: unsigned[8] = 255
+var x: unsigned[8] = 255    -- is initialization required?
 var y: signed[8]   = -1
 ```
 
@@ -94,7 +94,9 @@ bounds could be established in some cases with some analysis.
 ### Casting between integral types?
 
 I think casting between unsigned and signed bits of the same width should keep
-the bits the same. Seems obvious and easy.
+the bits the same. Seems obvious and easy. (Although, another option is to
+transform negative signed values to 0 and transform large unsigned values to
+the largest signed value.)
 
 Addition and between unsigned and signed bits work exactly the same because of
 two's complement, so I don't think we need to do anything special.
@@ -205,7 +207,8 @@ ramifications for array indexing. If any cast can be made from one range type
 or another (or even a bit type to a range type), then the compiler could never
 tell you an array would be indexed out of bounds, because the index would be
 clamped to be in bounds at runtime, which does not let the programmer know that
-they are going to be accessing the array incorrectly.
+they are going to be accessing the array incorrectly. In short, I have to think
+about this more.
 
 ### For loops over arrays
 
@@ -225,15 +228,14 @@ Because array lengths are known, we can do easy loops over arrays:
   }
 }
 ```
-
+Or, because we are wizards, use `map`.
 
 ## Records
 
-If I'm understanding the reading on row polymorphism correctly, then row
-polymoprhism is somewhat similar to duck typing. Functions can be parameterized
-by record types as long as the record contains fields with the
-appropriate names/types that the function requires (perhaps an opportunity for
-monomorphization?).
+If I'm understanding the reading on row polymorphism correctly, then functions
+can be parameterized by record types as long as the record contains fields with
+the appropriate names/types that the function requires (perhaps an opportunity
+for monomorphization?).
 
 ## Sprite types
 
