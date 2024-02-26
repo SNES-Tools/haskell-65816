@@ -31,9 +31,9 @@ What is the difference between types `[1]Bit` vs. `Bit`? What is `[0]Bit`?
 
 The motto of "Well typed programs do not go wrong" has me wondering a previous
 thing we thought about... Can we encode cycle count information into the types?
-This is a place where inference is entirely necessary; the programmer can't
-runs in a time lower than is humanly (or computerly) possible to implement in
-assembly.
+This is a place where inference is entirely necessary; the programmer can't say
+that a program runs in a time lower than is humanly (or computerly) possible to
+implement in assembly.
 
 Is size polymorphism a good fit for Horace? Size polymorphism + algebraic data
 types (or are they really the same thing!?)?
@@ -77,3 +77,9 @@ in list comprehensions? Was this in Haskell?
 
 4.12: could have gotten this had I had a little more experience and didn't skip
 down here so fast
+
+To summarize: the things I am seeing and liking:
+* sequences where the length is encoded in the type
+* specifying the width of bits
+* type-directed splits
+* size polymorphism

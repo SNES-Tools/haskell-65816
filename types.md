@@ -172,6 +172,43 @@ What about casting between ranges that are disjoint? For example
 This could result with `x = 10`, but if this were allowed, this could cause
 some intuitive behavior with array indexing as seen below.
 
+Another thought to try to mend the range debate is to only allow ranges to be
+added to other ranges where we can't guarantee the resulting evaluation
+requires a clamp to be performed. In formal terms, the type of an addition
+`x + y` is the type of `x`, say `range[n, m]` where the type of `y` must
+satisfy `range[-d, d]` where `d = m - n`. In this example:
+```
+{
+  var x: range[ 1, 10] = 2
+  var y: range[10, 20] = 15   -- the lower bound is 10, not 11
+  x <- x + y
+  -- this expression fails to type check: the addition of `y` will always cause
+  -- `x + y` to exceed its bounds, because `y > 9 = 10 - 1`
+  x <- y + x
+  -- the type of `y + x` is now range[10, 20] and should be fine, it's a
+  -- question of whether or not this type can be cast down to `range[1, 10]`
+  -- which is probably somewhere above this in the document and I've written
+  -- too much so I can't find it anymore
+}
+```
+
+At the end of the day (today is Sunday), it seems that implicit casting is
+going to be a problem and might "smooth out" a lot of issues that should have
+otherwise been errors to the programmer.
+
+* with no sophisticated type system, programmers couldn't possibly be aware
+  (i.e. automatically warned) that their arithmetic is going to be wrong
+* the goal with a sophisticated type system is to guarantee that it will never
+  be wrong by rejecting programs that abuse types
+* the problem with all this discussion on implicit casting is that we are
+  keeping programs safe but the programmer still doesn't know that the
+  arithmetic is going to be wrong (it could even be more wrong than they
+  thought)
+
+I think a better approach might look like aggressive use of size polymorphic
+functions a-la Cryptol, and being more strict about rules, requiring explicit
+conversions between types.
+
 ## Array types
 
 Array types are vectors of values of a known length. Both the underlying type
