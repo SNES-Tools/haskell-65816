@@ -329,6 +329,9 @@ loop function run on it at the same time. But perhaps we might want to have
 some sprites loaded but not displayed (like an inactive sprite to be
 temporarily hidden or frozen).
 
+Implementation-wise: we will have to think about how this might affect
+allocation of objects (in VRAM) to sprites.
+
 ## Void
 
 Void type to cover the following case:
