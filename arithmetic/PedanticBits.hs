@@ -65,8 +65,8 @@ data BitParam
 -- relation from TAPL
 -- T1 <: T2 if and only if T1 is compatible with T2
 (<:) :: Type -> Type -> Bool
-(<:) (BitType (Exactly n) (Exactly m)) = n == m
-(<:) (BitType (Exactly n) (Exactly m)) = 
+(<:) (BitType (Exactly n)) (BitType (Exactly m)) = n == m
+(<:) _ _ = undefined
 
 extend :: Context -> Id -> Type -> Context
 extend c id t = (id, t) : c
@@ -80,10 +80,11 @@ typeof' _ (Lit i)
   | i == 0 = BitType (Exactly 0)
   | i < 0 = BitType (Exactly (ceiling $ logBase 2 $ (abs $ fromIntegral i)))
 typeof' c (UnaryOp BitNot e) = typeof' c e
-typeof' c (UnaryOp Extend e) = case typeof' c e of
-                                 Exactly n -> AtLeast n
-                                 AtLeast n -> AtMost n
+typeof' c (UnaryOp Extend e) =
+  case typeof' c e of
+    BitType (Exactly n) -> BitType (AtLeast n)
+    BitType (AtLeast n) -> BitType (AtMost n)
 typeof' c (UnaryOp SignExtend e) = typeof' c e
 typeof' c (UnaryOp BitNot e) = typeof' c e
-                            
+typeof' _ _ = undefined
 -- stuck, giving up for now
