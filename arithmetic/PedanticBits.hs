@@ -78,7 +78,7 @@ typeof' :: Context -> Expr -> Type
 typeof' _ (Lit i)
   | i > 0 = BitType (Exactly (ceiling $ logBase 2 $ (fromIntegral i) + 1))
   | i == 0 = BitType (Exactly 0)
-  | i < 0 = BitType (Exactly (ceiling $ logBase 2 $ (abs (fromIntegral i))))
+  | i < 0 = BitType (Exactly (ceiling $ logBase 2 $ (abs $ fromIntegral i)))
 typeof' c (UnaryOp BitNot e) = typeof' c e
 typeof' c (UnaryOp Extend e) = case typeof' c e of
                                  Exactly n -> AtLeast n
