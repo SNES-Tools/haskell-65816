@@ -1,3 +1,5 @@
+import Data.Bits
+
 {-
   This is a language of bits, using a more sophisticated type system.
 -}
@@ -48,7 +50,8 @@ data ArithOp =
 type Id = String
 
 data TypeSyntax =
-  Bits Word -- written type should be exact, range only applies internally
+  BitTypeSyntax Word
+  -- written type should be exact, range only applies internally
   deriving (Show)
 
 {-
@@ -134,12 +137,17 @@ typeof' c (BinaryOp _ e1 e2) =
       if (Finite lb2) > ub1 || (Finite lb1) > ub2
         then error "Incompatible types in binary operation"
         else BitType (max lb1 lb2) (min ub1 ub2)
+{-
+  In the let expression the user types in a size they want for the value. the
+  actual value being bound may be some range, just need that exact size to be
+  in the range to be okay
+-}
 typeof' c (Let id t e1 e2) = typeof' (extend c id t1) e2
   where
     t1 =
       let (BitType lb ub) = typeof' c e1
        in case t of
-            Bits n ->
+            BitTypeSyntax n ->
               if inRange n lb ub
                 then constant n
                 else error "Incompatible type with let expression"
@@ -151,9 +159,53 @@ typeof' c (Var id) =
     Just x -> x
     Nothing -> error "Lookup failed"
 
+{-
+  evaluation rules:
+
+  need to know the types while doing the evaluation. might be more useful to
+  provide an upper bound on the size of types
+
+  if the type of the top-level expression could be some range of bits, we
+  select the smallest width in the range (lower bound)
+
+-}
+type Env = [(Id, Int)]
+
+eval :: Expr -> Int
+eval = eval' []
+
+eval' :: Env -> Expr -> Int
+eval' _ (Lit n) = n
+eval' r (UnaryOp Shrink e) = eval' r e
+eval' r (UnaryOp Extend e) = eval' r e
+eval' r (UnaryOp SignExtend e) = eval' r e -- no special handling??
+eval' r (BinaryOp (ArithOp ArithPlus) e1 e2) =
+  let v1 = eval' r e1
+   in let v2 = eval' r e2
+       in v1 + v2
+eval' r (BinaryOp (BitOp BitAnd) e1 e2) =
+  let v1 = eval' r e1
+   in let v2 = eval' r e2
+       in v1 .&. v2
+eval' r (BinaryOp (BitOp BitOr) e1 e2) =
+  let v1 = eval' r e1
+   in let v2 = eval' r e2
+       in v1 .|. v2
+eval' r (BinaryOp (BitOp BitEor) e1 e2) =
+  let v1 = eval' r e1
+   in let v2 = eval' r e2
+       in v1 `xor` v2
+eval' r (Let id (BitTypeSyntax w) e1 e2) =
+  let v1 = (eval' r e1) `mod` (2 ^ w)
+   in eval' ((id, v1) : r) e2
+eval' r (Var id) =
+  case lookup id r of
+    Just v -> v
+    Nothing -> error "eval: Lookup failed"
+
 example :: Expr
 example =
-  BinaryOp (BitOp BitAnd) (UnaryOp Extend (Lit 5)) (UnaryOp Shrink (Lit 50))
+  BinaryOp (BitOp BitOr) (UnaryOp Extend (Lit 5)) (UnaryOp Shrink (Lit 50))
 
 example2 :: Expr
-example2 = Let "x" (Bits 3) (Lit 7) (Var "x")
+example2 = Let "x" (BitTypeSyntax 3) (UnaryOp Shrink (Lit 100)) (Var "x")
