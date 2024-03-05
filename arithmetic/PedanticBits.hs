@@ -19,7 +19,7 @@ data Expr
   = Lit Int
   | BinaryOp BinaryOp Expr Expr
   | UnaryOp UnaryOp Expr
-  | Let Id Type Expr Expr
+  | Let Id TypeSyntax Expr Expr
   | Var Id
   deriving (Show)
 
@@ -47,10 +47,14 @@ data ArithOp =
 
 type Id = String
 
+data TypeSyntax =
+  Bits Word -- written type should be exact, range only applies internally
+  deriving (Show)
+
 {-
   Typing rules:
 
-  on a sheet of paper
+  now in my mind...
 -}
 type Context = [(Id, Type)]
 
@@ -73,12 +77,6 @@ instance (Ord a) => Ord (Bound a) where
   (<=) (Finite a) (Finite b) = a <= b
   (<=) Infinity _ = False
   (<=) Infinity Infinity = True
-
--- relation from TAPL
--- T1 <: T2 if and only if T1 is compatible with T2
-(<:) :: Type -> Type -> Bool
---(<:) (BitType (Exactly n)) (BitType (Exactly m)) = n == m
-(<:) _ _ = undefined
 
 extend :: Context -> Id -> Type -> Context
 extend c id t = (id, t) : c
@@ -136,7 +134,26 @@ typeof' c (BinaryOp _ e1 e2) =
       if (Finite lb2) > ub1 || (Finite lb1) > ub2
         then error "Incompatible types in binary operation"
         else BitType (max lb1 lb2) (min ub1 ub2)
+typeof' c (Let id t e1 e2) = typeof' (extend c id t1) e2
+  where
+    t1 =
+      let (BitType lb ub) = typeof' c e1
+       in case t of
+            Bits n ->
+              if inRange n lb ub
+                then constant n
+                else error "Incompatible type with let expression"
+    inRange n lb (Finite ub) = lb <= n && n <= ub
+    inRange n lb Infinity = n >= lb
+    constant x = BitType x (Finite x)
+typeof' c (Var id) =
+  case lookup id c of
+    Just x -> x
+    Nothing -> error "Lookup failed"
 
 example :: Expr
 example =
   BinaryOp (BitOp BitAnd) (UnaryOp Extend (Lit 5)) (UnaryOp Shrink (Lit 50))
+
+example2 :: Expr
+example2 = Let "x" (Bits 3) (Lit 7) (Var "x")
