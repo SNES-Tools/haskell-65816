@@ -210,7 +210,8 @@ eval' r (UnaryOp SignExtend e) =
 eval' r (BinaryOp op e1 e2) =
   let (ValBits w1 v1) = eval' r e1
    in let (ValBits w2 v2) = eval' r e2
-       in ValBits (max w1 w2) (op' v1 v2)
+       in let w = min w1 w2 -- skeptical about the use of min here
+           in ValBits w $ (op' v1 v2) `mod` (2 ^ w)
   where
     op' =
       case op of
@@ -240,3 +241,13 @@ example3 = Let "x" (BitTypeSyntax 3) (UnaryOp Extend (Lit (-1))) (Var "x")
 
 example4 :: Expr
 example4 = Let "x" (BitTypeSyntax 3) (UnaryOp SignExtend (Lit (-1))) (Var "x")
+
+example5 :: Expr
+example5 =
+  BinaryOp (ArithOp ArithPlus) (UnaryOp Extend (Lit 5)) (UnaryOp Extend (Lit 5))
+
+example6 :: Expr
+example6 = BinaryOp (ArithOp ArithPlus) (Lit 5) (UnaryOp Extend (Lit 5))
+
+example7 :: Expr
+example7 = BinaryOp (ArithOp ArithPlus) (Lit 5) (Lit 5)
