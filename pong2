@@ -1,31 +1,158 @@
 {-
   A second attempt at generating sample code for Pong, reflecting discussions
   about the language features.
+
+  new thought: no shadowing, makes some people's lives easier
 -}
 
 mode Pong {
 
-  graphics { } -- omitted
-  palettes { } -- omitted
+  graphics { 
+    {-
+      The graphics that you might see are:
+      * a font for displaying the score (digits 0-9)
+      * a single vertical bar for the dividing line on the screen
+      * a single blank tile for the rest of the background 
+    -}
+    Font:  2bpp, 8x8
+    Bar:   2bpp, 8x8
+    Blank: 2bpp, 8x8
+  }
+  palettes {
+    BGColors: 2bpp
+  }
 
-  enums {
-    Side { LEFT, RIGHT }
+  types {
+    Side    { Left, Right }
+    Vert    { Up, Down }
+    Maybe a { Just a, Nothing } 
   }
   
   state {
-    left_pts     : number (0-99) -- default value inferred to be 0 
-    right_pts    : number (0-99)
-    left_paddle  : sprite Paddle -- default value is a call to init
-    right_paddle : sprite Paddle -- except not, there is a parameter!
-    ball         : sprite Ball
+    left_pts:     range[0,99]
+    right_pts:    range[0,99]
+    left_paddle:  sprite Paddle
+    right_paddle: sprite Paddle
+    ball:         sprite Ball
   }
 
   init {
-    left_paddle  <- Paddle(LEFT)
-    right_paddle <- Paddle(RIGHT)
+    left_pts     <- 0
+    right_pts    <- 0
+    
+    left_paddle  <- Paddle(Left)  -- in-place assignment of record
+    right_paddle <- Paddle(Right)
 
-    for i = 0 to 27 do { -- type inference on `i` is number (0-27) ?
-      bg0[15, i] <- **   -- omitted
+    for i = 0 to 27 do {
+      bg0[15, i] <- Bar   -- assign bar tile in the middle of the screen
+      -- 2D arrays? syntactic sugar for bg0[15][i]
+    }
+
+    ball         <- Ball
+  }
+
+  main {
+    
+  }
+
+  sprites {
+    Paddle {
+      state {
+        x:    bits[8]
+        y:    range[20, 200]
+        side: data Side
+      }
+
+      init(input_side: data Side) {
+        y    <- 100
+        side <- input_side
+
+        case input_side of {
+          Left  -> (x <-  10) -- need compiler to know `x` will always be 
+          Right -> (x <- 245) -- initialized
+        }
+      }
+
+      methods {
+        -- kind of a main loop for sprites, the reason this is not interned
+        -- like for the mode is maybe we want a sprite to be "inactive", so
+        -- don't call it
+        tick(): void {
+          case side of {
+            Left -> {
+              if con1.holding(ButtonUp) {
+                y <- transmute(y - 1)
+              }
+            }
+            Right -> {
+              if con1.holding(ButtonDown) {
+                y <- transmute(y + 1)
+              }
+            }
+          }
+        }
+
+        reset(): void {
+          y <- 100
+        }
+      }
+    }
+
+    Ball {
+      state {
+        horiz_dir:  data Side
+        vert_dir:   data Vert 
+        -- screen coordinates for actually drawing the sprite
+        x: range[ 9, 246]
+        y: range[20, 200]
+      }
+
+      init {
+        horiz_dir <- Right
+        vert_dir  <- Up
+        x         <- 128
+        y         <- 110
+      }
+
+      methods {
+        tick(): void {
+          var eff_vert_dir: data Vert = if y = 20 then
+                                          Down
+                                        else if y = 200 then
+                                          Up
+                                        else
+                                          vert_dir
+
+          case eff_vert_dir of {
+            Up   -> {
+              y <- transmute(y - 1)
+            }
+            Down -> {
+              y <- transmute(y + 1)
+            }
+          }
+
+          case horiz_dir of {
+            Left  -> (x <- transmute(x - 1))
+            Right -> (x <- transmute(x + 1))
+          }
+        }
+
+        check_winner(): maybe Side {
+          if x < 10 then
+            Just Right
+          else if x > 245 then
+            Just Left
+          else
+            Nothing
+        }
+      }
+    }    
+  }
+
+  functions {
+    subpixel_to_pixel(subpixel: range[-32_768, 32_767]): bits[8] {
+      shrink(to_bits(subpixel) >> 8)
     }
   }
 }
